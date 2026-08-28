@@ -17,6 +17,10 @@
 #define STATUS_H 16
 #define TICK_MS  20
 
+#define BALL_SPEED_BASE 4.6f
+#define BALL_SPEED_STEP 0.45f
+#define BALL_SPEED_MAX  9.0f
+
 // --- pointer acceleration ---------------------------------------------------
 // The trackball reports detents, not distance, so a fixed step is either too
 // coarse for small corrections or too slow to cross the screen. Scale the step
@@ -198,7 +202,10 @@ void BrickBreakerPanel::resetBall(void)
 
 void BrickBreakerPanel::launchBall(void)
 {
-    const float speed = 2.2f + level * 0.2f;
+    // px per TICK_MS. 5.0 at level 1 is ~250 px/s, crossing the playfield in
+    // about a second; capped so the discrete step stays smaller than a brick.
+    float speed = BALL_SPEED_BASE + level * BALL_SPEED_STEP;
+    if (speed > BALL_SPEED_MAX) speed = BALL_SPEED_MAX;
     ballVX = speed * sinf(aimAngle);
     ballVY = -speed * cosf(aimAngle);
 }
@@ -277,6 +284,7 @@ void BrickBreakerPanel::step(void)
 {
     const int16_t pw = lv_obj_get_width(paddle);
     const int16_t paddleY = h - PADDLE_H - 2;
+    const float prevBottom = ballY + BALL_D;
 
     ballX += ballVX;
     ballY += ballVY;
@@ -294,7 +302,7 @@ void BrickBreakerPanel::step(void)
         ballVX = -ballVX;
     }
 
-    if (ballVY > 0 && ballY + BALL_D >= paddleY && ballY + BALL_D <= paddleY + PADDLE_H + 4 &&
+    if (ballVY > 0 && prevBottom <= paddleY && ballY + BALL_D >= paddleY &&
         cx >= paddleX && cx <= paddleX + pw) {
         const float offset = (cx - (paddleX + pw / 2.0f)) / (pw / 2.0f);
         const float speed = sqrtf(ballVX * ballVX + ballVY * ballVY);
