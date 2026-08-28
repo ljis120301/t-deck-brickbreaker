@@ -24,7 +24,7 @@ jobs:
     steps:
       # Step 1: Download your repository code
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Step 2: Install core build tools AND your 3rd party apt packages
       - name: Install System Dependencies
