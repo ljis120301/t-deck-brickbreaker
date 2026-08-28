@@ -5,6 +5,7 @@
 #include <set>
 
 class MapPanel;
+class BrickBreakerPanel;
 
 /**
  * @brief GUI view for e.g. T-Deck
@@ -278,6 +279,8 @@ class TFTView_320x240 : public MeshtasticView
     static void ui_event_GroupsButton(lv_event_t *e);
     static void ui_event_MessagesButton(lv_event_t *e);
     static void ui_event_MapButton(lv_event_t *e);
+    static void ui_event_GameButton(lv_event_t *e);
+    static void ui_event_GameKey(lv_event_t *e);
     static void ui_event_SettingsButton(lv_event_t *e);
 
     static void ui_event_NodeButton(lv_event_t *e);
@@ -429,6 +432,9 @@ class TFTView_320x240 : public MeshtasticView
     meshtastic_Channel *channel_scratch;                  // temporary scratch copy of channel db
     lv_obj_t *qr;                                         // qr code
     MapPanel *map = nullptr;                              // map
+    BrickBreakerPanel *game = nullptr;                    // brick breaker app
+    lv_obj_t *gameButton = nullptr;                       // launcher button for the game
+    lv_obj_t *gamePanel = nullptr;                        // game panel
     std::unordered_map<uint32_t, lv_obj_t *> nodeObjects; // nodeObjects displayed on map
     // extended default device profile struct with additional required data
     struct meshtastic_DeviceProfile_ext : meshtastic_DeviceProfile {

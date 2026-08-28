@@ -9,6 +9,7 @@
 #include "graphics/driver/DisplayDriver.h"
 #include "graphics/driver/DisplayDriverFactory.h"
 #include "graphics/map/MapPanel.h"
+#include "graphics/game/BrickBreakerPanel.h"
 #include "graphics/map/TileProvider.h"
 #include "graphics/map/URLService.h"
 #include "graphics/view/TFT/Themes.h"
@@ -468,6 +469,7 @@ void TFTView_320x240::ui_set_active(lv_obj_t *b, lv_obj_t *p, lv_obj_t *tp)
 
     if (activePanel) {
         lv_obj_add_flag(activePanel, LV_OBJ_FLAG_HIDDEN);
+        if (activePanel == gamePanel && game) game->deactivate();
         if (activePanel == objects.messages_panel) {
             lv_obj_remove_state(objects.message_input_area, LV_STATE_FOCUSED);
             if (!lv_obj_has_flag(objects.keyboard, LV_OBJ_FLAG_HIDDEN)) {
@@ -713,6 +715,62 @@ void TFTView_320x240::ui_events_init(void)
     lv_obj_add_event_cb(objects.messages_button, this->ui_event_MessagesButton, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(objects.map_button, this->ui_event_MapButton, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(objects.settings_button, this->ui_event_SettingsButton, LV_EVENT_ALL, NULL);
+
+    // --- Brick Breaker app -------------------------------------------------
+    gameButton = lv_btn_create(lv_obj_get_parent(objects.map_button));
+    lv_obj_set_size(gameButton, 36, 36);
+    lv_obj_set_style_border_width(gameButton, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    {
+        lv_obj_t *lbl = lv_label_create(gameButton);
+        lv_label_set_text(lbl, "BB");
+        lv_obj_center(lbl);
+    }
+    lv_obj_add_event_cb(gameButton, this->ui_event_GameButton, LV_EVENT_ALL, NULL);
+
+    gamePanel = lv_obj_create(lv_obj_get_parent(objects.map_panel));
+    lv_obj_set_pos(gamePanel, LV_PCT(12), LV_PCT(10));
+    lv_obj_set_size(gamePanel, LV_PCT(88), LV_PCT(90));
+    lv_obj_add_flag(gamePanel, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(gamePanel, LV_OBJ_FLAG_CLICK_FOCUSABLE);
+    lv_obj_add_event_cb(gamePanel, this->ui_event_GameKey, LV_EVENT_KEY, NULL);
+    game = new BrickBreakerPanel(gamePanel);
+
+    // Seven 36px buttons with 4px gaps need 276px in a ~238px column, which
+    // clips the first and last icons. Measure the column and size the buttons
+    // to fit rather than assuming a height.
+    lv_obj_set_style_pad_row(objects.button_panel, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
+    {
+        lv_obj_t *navButtons[] = {objects.home_button,  objects.nodes_button, objects.groups_button,
+                                  objects.messages_button, objects.map_button, gameButton,
+                                  objects.settings_button};
+        const int count = sizeof(navButtons) / sizeof(navButtons[0]);
+
+        lv_obj_update_layout(objects.button_panel);
+        int32_t avail = lv_obj_get_content_height(objects.button_panel);
+        if (avail <= 0) avail = LV_VER_RES - 2; // not laid out yet; fall back to screen height
+
+        int32_t size = (avail - (count - 1) * 2) / count;
+        if (size > 36) size = 36;
+        if (size < 22) size = 22;
+        for (int i = 0; i < count; i++) {
+            lv_obj_set_size(navButtons[i], size, size);
+        }
+    }
+
+    // Keep the visual order matching the nav order: sit just before Settings.
+    lv_obj_move_to_index(gameButton, lv_obj_get_index(objects.settings_button));
+
+    // The button was created last, so it landed at the end of the nav group and
+    // the encoder ran past it. Move it next to the other sidebar buttons.
+    {
+        lv_ll_t *ll = &lv_group_get_default()->obj_ll;
+        void *gNode = nullptr, *sNode = nullptr;
+        for (lv_obj_t **i = (lv_obj_t **)_lv_ll_get_head(ll); i != NULL; i = (lv_obj_t **)_lv_ll_get_next(ll, i)) {
+            if (*i == gameButton) gNode = i;
+            else if (*i == objects.settings_button) sNode = i;
+        }
+        if (gNode && sNode) _lv_ll_move_before(ll, gNode, sNode);
+    }
 
     // home buttons
     lv_obj_add_event_cb(objects.home_mail_button, this->ui_event_EnvelopeButton, LV_EVENT_CLICKED, NULL);
@@ -1130,6 +1188,22 @@ void TFTView_320x240::ui_event_MessagesButton(lv_event_t *e)
             lv_obj_clear_flag(objects.msg_restore_panel, LV_OBJ_FLAG_HIDDEN);
             lv_group_focus_obj(objects.msg_restore_button);
         }
+    }
+}
+
+void TFTView_320x240::ui_event_GameButton(lv_event_t *e)
+{
+    if (lv_event_get_code(e) == LV_EVENT_CLICKED && THIS->activeSettings == eNone) {
+        THIS->ui_set_active(THIS->gameButton, THIS->gamePanel, nullptr);
+        if (THIS->game) THIS->game->activate();
+        lv_group_focus_obj(THIS->gamePanel);
+    }
+}
+
+void TFTView_320x240::ui_event_GameKey(lv_event_t *e)
+{
+    if (THIS->game && THIS->activePanel == THIS->gamePanel) {
+        THIS->game->onKey(lv_indev_get_key(lv_indev_active()));
     }
 }
 
@@ -7357,6 +7431,9 @@ void TFTView_320x240::task_handler(void)
     if (screensInitialised) {
         if (map && activePanel == objects.map_panel)
             map->task_handler();
+
+        if (game && activePanel == gamePanel)
+            game->task_handler();
 
         if (curtime - lastrun1 >= 1) { // call every 1s
             if (map) {
