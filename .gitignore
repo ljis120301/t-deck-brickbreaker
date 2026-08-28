@@ -5,3 +5,9 @@
 .vscode/ipch
 studio
 build
+# macOS / editor cruft (not in upstream device-ui)
+.DS_Store
+._*
+.idea/
+*.swp
+*~
