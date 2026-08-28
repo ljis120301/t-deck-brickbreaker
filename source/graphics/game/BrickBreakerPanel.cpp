@@ -219,8 +219,7 @@ void BrickBreakerPanel::step(void)
 void BrickBreakerPanel::updateStatus(void)
 {
     char buf[48];
-    snprintf(buf, sizeof(buf), "S%u L%u B%u  gpio:%u key:%u/%lu", score, level, lives,
-             (unsigned)gpioEvents, (unsigned)keyEvents, (unsigned long)lastKeyCode);
+    snprintf(buf, sizeof(buf), "SCORE %05u   LVL %u   BALLS %u", score, level, lives);
     lv_label_set_text(status, buf);
 
     const char *msg = "";
