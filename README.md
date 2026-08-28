@@ -1,255 +1,97 @@
-#
+# T-Deck Brick Breaker
 
-<div align="center">
+Brick Breaker as a **native app inside Meshtastic** on the LilyGo T-Deck. It appears
+in the sidebar next to Maps — this is not a replacement firmware, and your node keeps
+running normally while you play.
 
-<img alt="meshtastic" src="https://avatars.githubusercontent.com/u/61627050?s=200&v=4" width="80" height="80">
+![sidebar: home, nodes, groups, messages, map, BB, settings]
 
-  <h1 align="center"> Meshtastic device-ui library</h1>
-  <p style="font-size:20px;" align="center">A versatile UI library for the <a href="https://meshtastic.org">meshtastic® project</a> </p>
-</div>
+- Roll the trackball left/right to move the paddle
+- Press **ENTER** to launch the ball
 
-<!--Project specific badges here-->
+## Flashing
 
-<p align="center">
-<a href="">
-    <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/meshtastic/device-ui"></a>
-    <a href="https://github.com/meshtastic/device-ui/issues">
-    <img alt="GitHub issues" src="https://img.shields.io/github/issues/meshtastic/device-ui"></a>
-  <a href="https://opencollective.com/meshtastic">
-    <img alt="Open Collective backers" src="https://img.shields.io/opencollective/backers/meshtastic?label=support%20meshtastic">
-  </a>
-</p>
-<div style="text-align: center;">
+Built against Meshtastic **2.7.26.54e0d8d**, target `t-deck-tft`. **LilyGo T-Deck only.**
 
-</div>
+### 1. Put the T-Deck in download mode — required
 
-## :wave: Introduction
+Meshtastic's firmware uses TinyUSB, which does not expose the ROM bootloader, so no
+flasher can do this for you:
 
-### Meshtastic device-ui library for TFT and OLED screens
+1. Unplug USB.
+2. Press and **hold** the centre of the trackball.
+3. Plug USB back in while still holding.
+4. Release.
 
-This C++ library is intended to support the following scenarios with enhanced screen UI:
+The screen stays dark. That is normal and does not mean it failed.
 
-- Integrated with meshtastic firmware for LoRa devices with TFT display (or potentially also OLED +PSRAM)
-- Stand-alone TFT+MCU devices such as WT32-SC01, CYD or T-HMI connected with meshtastic LoRa devices
-- Linux based devices with LoRa shield, e.g Raspberry Pi, Meshstick, Milk-V Duo/Mars with TFT display (hat or diy)
-- Native Linux X11 application with SimRadio e.g. for tests, GUI simulation & debugging (MQTT only application)
+If that does not take, leave USB plugged in, hold the trackball centre, tap **RST**,
+release RST, then release the trackball.
 
-<img src="docs/T-Deck.jpg" alt="scenario 1" width="205" height="150"><img src="docs/CYD.png" alt="scenario 2" width="220" height="150"><img src="docs/Pi400-TFT.jpg" alt="scenario 3" width="170" height="150"><img src="docs/X11.png" alt="scenario 4" width="230" height="150">
+### 2. Back up first
 
-<p align="center">
-Vectors and icons by <a href="https://www.svgrepo.com/" target="_blank">SVG Repo</a><br>
-Graphics using <a href="https://lvgl.io/" target="_blank">LVGL</a> library
-</p>
+Your node's private key lives on the device and cannot be recovered if lost:
 
-## :pencil: TODOs
+```
+esptool --port /dev/cu.usbmodemXXXX read-flash 0 0x1000000 tdeck-backup.bin
+```
 
-### General Architecture
+Restore with `write-flash 0 tdeck-backup.bin`.
 
-    - [ ] Overall design (MVC approach)
-      - [x] DisplayDriver inheritance hierarchy
-      - [x] DisplayDriver factory
-      - [x] TFT Driver
-      - [ ] OLED Driver
-      - [ ] E-Ink Driver
-      - [x] View hierarchy
-      - [x] View factory
-      - [x] Controller design and interface implementation
-      - [x] Controller <-> model interface
-        - [x] Packet based thread safe interface
-        - [x] serial communication interface
-        - [x] protobuf encoding/decoding
-      - [x] Logging interface
-      - [x] Add lvgl compatible input driver interface
-      - [x] Add interface for persistency
-        - [x] Screen calibration data
-        - [x] Device settings (General)
-        - [x] Message storage
-        - [ ] Serial connection config
-    - [x] Dynamic behavior
-      - [x] Startup config
-      - [x] Restart behavior
-      - [x] Display sleep
-      - [x] Heartbeat timer based on device input actions
-    - [x] Localisation support
-      - [x] Danish translation
-      - [x] Dutch translation
-      - [x] Finnish translation
-      - [x] French translation
-      - [x] German translation
-      - [x] Greek translation
-      - [x] Italian translation
-      - [x] Netherlands translation
-      - [x] Norwegian translation
-      - [x] Polish translation
-      - [x] Portuguese translation
-      - [x] Portuguese translation
-      - [x] Russian translation
-      - [x] Slovenian translation
-      - [x] Spanish translation
-      - [x] Swedish translation
-      - [x] Turkish translation
-      - [x] Ukrainian translation
-    - [ ] Support dynamic OLED / Color(TFT) selection
-    - [x] Add support for UI scaling and try eliminate fixed positioning (lvgl v9)
-    - [x] Allow co-existence of generated files/views by different eez-studio projects
-    - [ ] Fix PSRAM draw buffer issue and do buffer size optimization
-    - [ ] Native lvgl driver support
-      - [ ] TFT drivers
-      - [ ] OLED drivers
-    - [ ] lvgl native driver DMA double-buffering
-    - [ ] E-Ink support
-    - [ ] RP2040 support
+### 3. Flash
 
-### Meshtastic UI (general)
+Go to [flasher.meshtastic.org](https://flasher.meshtastic.org), select **T-Deck**, then
+upload one of the release binaries:
 
-    - [x] Boot screen
-    - [x] Customizable boot screen
-    - [x] Home Screen
-      - [x] Messages info
-      - [x] Nodes info
-      - [x] GPS info
-      - [x] WiFi info
-      - [x] Time and Data
-      - [x] MQTT info
-      - [x] SD card info
-      - [x] Free memory info
-    - [ ] Nodes panel
-      - [x] Scroll display and sorting
-      - [x] Node details
-      - [x] Position data
-      - [x] Telemetry data display
-      - [ ] Repeater support (manual insertion)
-      - [ ] LastHeard & time source handling improvements
-      - [ ] Remote Node configuration
-      - [x] Filter (offline, unknown, channel, public key, position, hops away, by name)
-      - [x] Highlight (position, telemetry, IAQ, by name)
-    - [x] Group channel panel
-    - [x] Chat panel
-      - [x] Scroll container and messages display
-      - [x] Virtual keyboard
-      - [x] Message acknowledgement
-      - [x] Delete chat
-    - [x] Map
-      - [x] Tiles dynamic loading
-        - [x] SD card
-        - [x] WLAN
-      - [x] Pan & Zoom
-      - [x] Node locations
-      - [ ] Location precision
-    - [ ] Settings
-      - [ ] Basic Settings
-        - [x] User name
-        - [x] Region
-        - [x] Modem Preset
-        - [x] Channel
-        - [x] Device Role
-        - [x] Screen Timeout
-        - [x] Screen Calibration
-        - [x] Screen Lock
-        - [x] Brightness
-        - [x] Input Control
-        - [x] Message Alert / Ringtones
-        - [x] Language
-        - [ ] Timezone
-        - [x] Maps
-        - [ ] Audio
-        - [x] NodeDB / Factory Reset
-        - [x] Reboot / Shutdown
-      - [ ] Advanced Settings
-        - [ ] General Settings
-        - [ ] Radio Settings
-        - [ ] Module Settings
-    - [x] Status bar with battery symbol
-    - [x] UI Keyboard navigation & control
-    - [x] Latin supplemental fonts
-    - [X] Cyrillic font glyphs
+| File | Flasher option | Effect |
+| --- | --- | --- |
+| `...-brickbreaker.bin` | **Update** | Writes `app0` only. **Keeps your key, channels and node DB.** Use this one. |
+| `...-brickbreaker.factory.bin` | Install from scratch | Full erase. Your node loses its private key and comes back as a new identity. |
 
-### :pager: T-Deck (also covered: unPhone)
+Prefer **Update**. Only reach for the factory image if the update path fails.
 
-    - [x] Firmware project integration
-    - [x] T-Deck UI
-      - [x] 320x240 scalable view
-      - [x] GPS position
-      - [x] Radio frequency display
-      - [x] Offline map display
-    - [x] I2C keyboard input handling
-    - [x] Trackball support (e.g. fast scrolling list views)
-    - [x] SD card support, mainly for offline maps or import/export (keys and channels)
-    - [ ] load custom fonts from SD card
-    - [x] disable screen to temporarily allow other connection (USB serial, BT) to the device
-    - [x] allow bluetooth connection via 'Programming Mode'
-    - [ ] I2S Audio support
+Do not rename the files — the flasher decides whether a full install is even offered
+by checking that the name ends in `.factory.bin`.
 
-### :pager: DIY Mesh-Tab (see <a href="[https://github.com/valzzu/Mesh-Tab]" target="_blank">https://github.com/valzzu/Mesh-Tab</a>)
+## Building from source
 
-    - [x] Mesh-Tab firmware support (320x240 and 320x480)
-      - [x] Generic LGFX Display driver
-      - [x] platformio.ini integration
-    - [x] XPT2046 touch driver
-    - [x] FT6236 touch driver
-    - [x] 320x240 landscape view
-      - [x] 3.2" TN TFT ST7789 display + XPT2046 touch driver (resistive)
-      - [x] 3.2" IPS TFT ILI9341 display + XPT2046 touch driver (resistive)
-      - [x] 3.2" IPS TFT ILI9341 display + FT6236 touch driver (capacitive)
-    - [x] 240x480 portrait view (scaled)
-      - [x] 3.5" TN TFT ST7789 display + XPT2046 touch driver (resistive)
-      - [x] 3.5" IPS TFT ILI9341 display + XPT2046 touch driver (resistive)
-      - [x] 3.5" IPS TFT ILI9488 display + FT6236 touch driver (capacitive)
-      - [x] 4.0" IPS TFT ILI9488 display + FT6236 touch driver (capacitive)
-    - [x] PWM buzzer
-    - [ ] SD card support (resistive displays)
-    - [ ] SD card support (capacitive displays)
+This repository is a fork of [meshtastic/device-ui](https://github.com/meshtastic/device-ui)
+at commit `1c45ebc`, with the game added on the `brickbreaker` branch. The game itself is:
 
-### :watch: T-Watch
+- `include/graphics/game/BrickBreakerPanel.h`
+- `source/graphics/game/BrickBreakerPanel.cpp`
+- ~77 lines of wiring in `source/graphics/TFT/TFTView_320x240.cpp`
 
-    - [ ] T-Watch UI
-      - [ ] 240x240 View
-      - [ ] Clock screen
-    - [ ] Firmware project integration
-    - [ ] Continue work on eez-studio UI screens
-    - [ ] Refactoring of common code with 320x240 view into base class
+No generated EEZ Studio code is modified — the launcher button and panel are created at
+runtime as siblings of the Map ones, so this rebases cleanly onto newer device-ui commits.
 
-### OLED
+To build, clone `meshtastic/firmware` at `v2.7.26.54e0d8d` and point its device-ui
+dependency at your checkout of this repo:
 
-    - [ ] Provide demo for OLED 128x64 screen
-    - [ ] Space and RAM requirements analysis
+```ini
+[device-ui_base]
+lib_deps =
+	symlink:///path/to/t-deck-brickbreaker
+```
 
-### :penguin: Portduino (Raspberry / native linux)
+Then:
 
-    - [x] Project integration into firmware
-    - [x] Display driver run-time configuration interface
-    - [x] Add missing settingsMap entries for DisplayDriverConfig
-    - [x] Integrate lvgl keyboard input driver
-    - [x] Add support for several SPI devices
-    - [ ] Add pwm brightness control
-    - [ ] IP address display (eth/wlan)
-    - [x] Target environment cleanup
+```
+pio run -e t-deck-tft
+```
 
-### :iphone: Stand-alone Device
+## Notes on the hardware
 
-    - [x] Dedicated device-ui project
-    - [ ] Sunton/EstarDyn CYD support (320x240) Note: no longer working due to insufficient memory
-    - [x] LilyGo T-HMI support (320x240)
-    - [x] Replicator support (esp32 + nrf52 radio)
-      - [x] Display driver
-      - [X] 480x480 view -> scaled 320x240
-    - [x] WT32-SC01 (Plus) support (480x320)
-      - [x] Display driver
-      - [x] 480x320 view -> scaled 320x240
-    - [ ] image size reduction
-    - [ ] Fix/Workaround serial light sleep UART reading issue (-> firmware)
-    - [ ] Heartbeat timer improvements
-    - [x] Serial data send/receive
-      - [x] UART connection support
-      - [ ] WLAN connection support
-      - [ ] Bluetooth connection support
-    - [ ] Serial Interface configuration UI screen
-    - [ ] Allow serial connection initialisation at runtime
+Two things make input on this device awkward, both handled in `BrickBreakerPanel.cpp`:
 
-## Architecture Overview device-ui library (Class Diagram)
+- `EncoderInputDriver` rate-limits the trackball to one event per 250ms, so a
+  per-event paddle step can never feel fast. Each event instead starts a short
+  glide that ramps while the roll continues.
+- lvgl's encoder handler converts `LV_KEY_LEFT`/`RIGHT` into rotation before any
+  widget sees them, and the T-Deck driver separately remaps the trackball's
+  horizontal axis onto `LV_KEY_UP`/`DOWN`. The game reads the trackball GPIOs
+  directly to sidestep both.
 
-<img src="docs/class-diagram.png" alt="class diagram">
+## Licence
 
-## Stats
-
-![Alt](https://repobeats.axiom.co/api/embed/13969b386b951b28cd1eb19ec1bbcf364318ddf7.svg 'Repobeats analytics image')
+GPL-3.0, inherited from meshtastic/device-ui. See [LICENSE](LICENSE).
