@@ -10,6 +10,15 @@ class EncoderInputDriver : public InputDriver
     virtual void init(void) override;
     virtual ~EncoderInputDriver(void) {}
 
+    /**
+     * Lossless detent counters. The shared `action` slot below holds only the
+     * most recent event and encoder_read() rate-limits to 4/s, so both drop
+     * detents. Consumers needing every one (e.g. a game wanting pointer
+     * acceleration) read and zero these instead.
+     */
+    static volatile int32_t detentX;
+    static volatile int32_t detentY;
+
     static void intPressHandler(void);
     static void intDownHandler(void);
     static void intUpHandler(void);

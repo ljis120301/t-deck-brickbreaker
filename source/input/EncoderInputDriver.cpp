@@ -5,6 +5,8 @@
 #include "util/ILog.h"
 
 volatile EncoderInputDriver::EncoderActionType EncoderInputDriver::action = TB_ACTION_NONE;
+volatile int32_t EncoderInputDriver::detentX = 0;
+volatile int32_t EncoderInputDriver::detentY = 0;
 
 EncoderInputDriver::EncoderInputDriver(void) {}
 
@@ -120,21 +122,25 @@ void EncoderInputDriver::intPressHandler()
 void EncoderInputDriver::intDownHandler()
 {
     action = TB_ACTION_DOWN;
+    detentY++;
 }
 
 void EncoderInputDriver::intUpHandler()
 {
     action = TB_ACTION_UP;
+    detentY--;
 }
 
 void EncoderInputDriver::intLeftHandler()
 {
     action = TB_ACTION_LEFT;
+    detentX--;
 }
 
 void EncoderInputDriver::intRightHandler()
 {
     action = TB_ACTION_RIGHT;
+    detentX++;
 }
 
 #endif
