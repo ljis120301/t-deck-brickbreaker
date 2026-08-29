@@ -31,6 +31,8 @@ class BrickBreakerPanel
     static constexpr int c_cols = 8;
     static constexpr int c_rows = 5;
     static constexpr int c_aimDots = 6;
+    static constexpr int c_bars = 3;      // vertical bars on a metal brick
+    static constexpr int c_wallSegs = 26; // hazard stripe segments per wall
 
     enum State { eReady, ePlaying, eCleared, eOver };
 
@@ -41,12 +43,22 @@ class BrickBreakerPanel
     bool hitBrick(float x, float y);
     void updateStatus(void);
     void grabInput(bool grab);
+    static void onPanelDeleted(lv_event_t *e);
 
     void pollTrackball(uint32_t now);
     void paintBrick(int r, int c);
+    void buildWalls(void);
+    void loadHiScore(void);
+    void saveHiScore(void);
     void layoutAim(void);
     void showAim(bool show);
 
+    // Every lv_obj below is a descendant of `panel` and is owned by lvgl, not
+    // by us. If lvgl ever deletes the panel (theme rebuild, screen teardown)
+    // all of them are freed underneath us, so we latch `dead` and stop
+    // touching any of them. crackA/crackB are also held by lvgl as raw
+    // pointers, so this object must outlive its lvgl tree.
+    bool dead = false;
     lv_obj_t *panel = nullptr;
     lv_obj_t *paddle = nullptr;
     lv_obj_t *ball = nullptr;
@@ -56,6 +68,10 @@ class BrickBreakerPanel
     lv_obj_t *cracks[c_rows][c_cols] = {};
     uint8_t brickHp[c_rows][c_cols] = {};
     lv_obj_t *aimDots[c_aimDots] = {};
+    lv_obj_t *bars[c_rows][c_cols][c_bars] = {};
+    lv_obj_t *wallSeg[2][c_wallSegs] = {};
+    lv_obj_t *hiLabel = nullptr;
+    lv_obj_t *livesLabel = nullptr;
 
     // Crack geometry, sized to the brick at activate(). All crack lines share
     // these arrays, which is fine because lvgl only stores the pointer.
@@ -64,13 +80,18 @@ class BrickBreakerPanel
 
     // panel geometry, measured on activate()
     int16_t w = 0, h = 0;
+    int16_t playLeft = 0, playRight = 0;
     int16_t brickW = 0, brickH = 0, originX = 0, originY = 0;
 
     float paddleX = 0, ballX = 0, ballY = 0, ballVX = 0, ballVY = 0;
     float aimAngle = 0;    // radians from straight up, negative = left
     float rateEma = 0;     // detents/sec, smoothed, drives acceleration
     uint32_t lastStep = 0;
-    uint16_t score = 0;
+    uint32_t score = 0, hiScore = 0;
+    uint32_t shownScore = 0xffffffffu, shownHi = 0xffffffffu;
+    uint8_t shownLives = 0xff, shownLevel = 0xff;
+    int8_t shownState = -1;   // banner text is only rewritten on a state change
+    int8_t aimVisible = -1;   // aim dots are only toggled when visibility flips
     uint8_t lives = 3, level = 1, bricksLeft = 0;
     State state = eReady;
 
